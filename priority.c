@@ -1,97 +1,72 @@
 #include <stdio.h>
 
-struct Process
+struct process
 {
-    int pid;
-    int arrival;
-    int burst;
-    int priority;
+    char pid[10];
+    int at, bt, pr;
+    int ct, wt, tat;
     int remaining;
-    int completion;
-    int waiting;
-    int turnaround;
+    int done;
 };
 
 int main()
 {
-    int n, time = 0, completed = 0, minPriority, current = -1;
+    int n, i, time = 0, completed = 0, idx;
+    float avg_wt = 0, avg_tat = 0;
+    struct process p[20];
 
-    printf("Enter number of processes: ");
     scanf("%d", &n);
-
-    struct Process p[n];
-
-    for(int i = 0; i < n; i++)
+    for(i = 0; i < n; i++)
     {
-        printf("\nProcess %d\n", i+1);
-
-        p[i].pid = i+1;
-
-        printf("Arrival Time: ");
-        scanf("%d", &p[i].arrival);
-
-        printf("Burst Time: ");
-        scanf("%d", &p[i].burst);
-
-        printf("Priority: ");
-        scanf("%d", &p[i].priority);
-
-        p[i].remaining = p[i].burst;
+        scanf("%s %d %d %d", p[i].pid, &p[i].at, &p[i].bt, &p[i].pr);
+        p[i].remaining = p[i].bt;
+        p[i].done = 0;
     }
 
     while(completed != n)
     {
-        minPriority = 9999;
-        current = -1;
-
-        for(int i = 0; i < n; i++)
+        idx = -1;
+        for(i = 0; i < n; i++)
         {
-            if(p[i].arrival <= time && p[i].remaining > 0)
+            if(p[i].done == 0 && p[i].at <= time)
             {
-                if(p[i].priority < minPriority)
-                {
-                    minPriority = p[i].priority;
-                    current = i;
-                }
+                if(idx == -1 || p[i].pr < p[idx].pr)
+                    idx = i;
             }
         }
 
-        if(current == -1)
+        if(idx == -1)
         {
             time++;
             continue;
         }
 
-        p[current].remaining--;
+        // run 1 unit at a time (preemptive)
+        p[idx].remaining--;
         time++;
 
-        if(p[current].remaining == 0)
+        if(p[idx].remaining == 0)
         {
+            p[idx].ct  = time;
+            p[idx].tat = p[idx].ct - p[idx].at;
+            p[idx].wt  = p[idx].tat - p[idx].bt;
+            p[idx].done = 1;
+            avg_wt  += p[idx].wt;
+            avg_tat += p[idx].tat;
             completed++;
-
-            p[current].completion = time;
-
-            p[current].turnaround = 
-                p[current].completion - p[current].arrival;
-
-            p[current].waiting =
-                p[current].turnaround - p[current].burst;
         }
     }
 
-    printf("\nPID\tAT\tBT\tPR\tCT\tTAT\tWT\n");
+    printf("Waiting Time:\n");
+    for(i = 0; i < n; i++)
+        printf("%s %d\n", p[i].pid, p[i].wt);
 
-    for(int i = 0; i < n; i++)
-    {
-        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-        p[i].pid,
-        p[i].arrival,
-        p[i].burst,
-        p[i].priority,
-        p[i].completion,
-        p[i].turnaround,
-        p[i].waiting);
-    }
+    printf("Turnaround Time:\n");
+    for(i = 0; i < n; i++)
+        printf("%s %d\n", p[i].pid, p[i].tat);
+
+    printf("Average Waiting Time: %.2f\n", avg_wt / n);
+    printf("Average Turnaround Time: %.2f\n", avg_tat / n);
 
     return 0;
-}
+} 
